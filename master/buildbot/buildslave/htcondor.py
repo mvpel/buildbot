@@ -85,7 +85,10 @@ class HTCondorLatentBuildSlave(DRMAALatentBuildSlave):
                         self.missing_timeout + ")\n" +
 
                     "arguments=" + self.slavename + "\n" +
+                    "job_ad_information_attrs=BuildslaveName\n" +
+                    "+BuildslaveName=\"" + self.slavename + "\"\n" +
                     "+JobDescription=\"" + self.slavename + "\"\n" +
+                    "+BuildslaveJob=TRUE\n" +
 
                     "environment=\"SLAVE_PASSWORD=" +
                          _htcondor_env_value(self.password) + "\"\n"
