@@ -17,8 +17,12 @@ Revisions: Michael Pelletier <michael.v.pelletier@raytheon.com>
 from twisted.internet import defer, threads
 from twisted.python import log
 from buildbot.buildslave import AbstractLatentBuildSlave
-from buildbot import interfaces
-from drmaa import drmaa
+from buildbot import interfaces, config
+
+try:
+    import drmaa
+except ImportError:
+    drmaa = None
 
 class DRMAALatentBuildSlave(AbstractLatentBuildSlave):
 
@@ -34,6 +38,10 @@ class DRMAALatentBuildSlave(AbstractLatentBuildSlave):
                          a script which creates the slave directory and
                          starts a non-daemon buildslave process.
         """
+
+        if not drmaa:
+            config.error("Enrico Sirola's 'drmaa-python' is needed to use a %s" %
+                    self.__class__.__name__)
 
         AbstractLatentBuildSlave.__init__(self, *args, **kwargs)
         self.job_template = self._get_blank_job_template()
