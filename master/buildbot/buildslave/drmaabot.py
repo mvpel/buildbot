@@ -57,6 +57,7 @@ class DRMAALatentBuildSlave(AbstractLatentBuildSlave):
         
         drmaa_session = self._get_persistent_drmaa_session()
         self.job_id = drmaa_session.runJob(self.job_template)
+
         log.msg('%s job %s queued (%s)' %
                 (self.drmaa_session_contact, self.job_id, self.slavename))
         return True
@@ -101,12 +102,17 @@ class DRMAALatentBuildSlave(AbstractLatentBuildSlave):
 
         if not DRMAALatentBuildSlave._drmaa_session:
             session = None
-            if self.drmaa_session_contact:
+            if self.drmaa_session_contact is not None:
                 session = drmaa.Session(self.drmaa_session_contact)
+                log.msg('Connected to existing %s DRMAA session' %
+                        (self.drmaa_session_contact)
             else:
+	        log.msg('%s' % (drmaa))
                 session = drmaa.Session()
-                self.drmaa_session_contact = session.contact
+                log.msg('Created a new %s DRMAA session' % session.contact)
+
             DRMAALatentBuildSlave._drmaa_session = session
+            self.drmaa_session_contact = session.contact
 
         return DRMAALatentBuildSlave._drmaa_session
 
