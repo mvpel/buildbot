@@ -40,7 +40,7 @@ class DRMAALatentBuildSlave(AbstractLatentBuildSlave):
         """
 
         if not drmaa:
-            config.error("Enrico Sirola's 'drmaa-python' is needed to use a %s" %
+            config.error("Enrico Sirola's 'drmaa' is needed to use a %s" %
                     self.__class__.__name__)
 
         AbstractLatentBuildSlave.__init__(self, *args, **kwargs)
@@ -113,5 +113,5 @@ class DRMAALatentBuildSlave(AbstractLatentBuildSlave):
     def _get_blank_job_template(self):
         """ Create and return a blank DRMAA job template """
 
-        drmaa_session.self = self._get_persistent_drmaa_session()
+        drmaa_session = self._get_persistent_drmaa_session()
         return drmaa_session.createJobTemplate()
