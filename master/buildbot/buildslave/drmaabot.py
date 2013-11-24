@@ -32,10 +32,10 @@ class DRMAALatentBuildSlave(AbstractLatentBuildSlave):
     job_template = None
 
     def __init__(self, slave_start_cmd, *args, **kwargs):
-        """
-        DRMAALatentBuildSlave - start a buildslave with the DRMAA scheduler API
-        slave_start_cmd: the OS command which starts the buildslave, typically
-                         a script which creates the slave directory and
+        """ DRMAALatentBuildSlave - start a buildslave with the DRMAA grid API
+
+        @param slave_start_cmd: the OS command which starts the buildslave,
+                         i.e., a script which creates the slave directory and
                          starts a non-daemon buildslave process.
         """
 
