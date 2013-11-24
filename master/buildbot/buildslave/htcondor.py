@@ -27,47 +27,53 @@ from buildbot.buildslave.drmaabot import DRMAALatentBuildSlave
 class HTCondorLatentBuildSlave(DRMAALatentBuildSlave):
 
     def __init__(self, slave_start_cmd, *args, **kwargs):
-        r""" Dispatch a latent buildslave to an HTCondor queue
+        """ Dispatch a latent buildslave to an HTCondor queue
         
-        @param slave_start_cmd: the OS command used to start the buildslave on
-                                the execute node on which the job runs.
-        @param accounting_group: The name of the HTCondor accounting group;
-                                 requires HTCondor v8.x or higher
-        @param accounting_group_user: name of the accounting group user;
-                                      requires HTCondor v8.x or higher
-        @param request_buildslave: with v7.9.0 machine_resource_names you can
-                                   specify a machine resource in your HTCondor
-                                   config to limit the number of buildslaves
-                                   which can run on a single exec host:
-                                     MACHINE_RESOURCE_NAMES = \
-                                          $(MACHINE_RESOURCE_NAMES) Buildslave
-                                     MACHINE_RESOURCE_Buildslave = 1
-                                     SLOT_TYPE_1 = buildslave=100%
-                                   Use "machine_resource_inventory_buildslave"
-                                   to specify a script which detects if a
-                                   machine has Buildbot available and returns
-                                   the desired maximum number of slaves per
-                                   host.  If none, it must still report zero:
-                                     DetectedBuildslave=0
-                                   This parameter can't be used unless this
-                                   HTCondor configuration is in place.
+        @param slave_start_cmd: the OS command used to create and start the
+            buildslave on the execute node to which the job is dispatched by
+            HTCondor, which must accept slave name as first argument, and use
+            BUILDSLAVE_PASSWORD environment variable for slave password.
+        @param accounting_group: The priority accounting group; requires
+            HTCondor v8.x.
+        @param accounting_group_user: priority accounting username (default:
+            buildmaster process owner); requires HTCondor v8.x if specified.
+        @param request_buildslave: with v7.9.0 C{machine_resource_names} you
+            may specify a C{buildslave} resource in your HTCondor config to
+            limit the number of buildslaves which can run on a single host::
+
+                MACHINE_RESOURCE_NAMES = $(MACHINE_RESOURCE_NAMES) Buildslave
+                MACHINE_RESOURCE_Buildslave = 1
+                SLOT_TYPE_1 = buildslave=100%
+                
+            Use C{machine_resource_inventory_buildslave} to specify a script
+            which detects if a machine has Buildbot available and prints
+            a string assigning the desired maximum number of slaves per host
+            to C{DetectedBuildslave}. If none, it must assign zero::
+
+                DetectedBuildslave=0
+
+            This parameter can't be used unless the machine resource is set up.
+        @type request_buildslave: integer
         @param request_cpus: reserve this many CPU cores for the buildslave
-        @param request_disk: request the use of the specified number of
-                             KILOBYTES of disk space in the exec host's
-                             $_CONDOR_SCRATCH_DIR scratch directory, default
-                             of 2GB.
-        @param request_memory: request the specified number of MEGABYTES of
-                               memory for the buildslave
-        @param extra_submit_descr: a newline-separated additional entries for
-                                   the HTCondor submit description file used to
-                                   start the buildslave.
+        @type request_cpus: integer
+        @param request_disk: request the specified number of I{kilobytes}
+            of disk space in the exec host's scratch directory referenced by
+            job environment variables C{$_CONDOR_SCRATCH_DIR} and C{$TMPDIR}
+            (default 1GB)
+        @type request_disk: integer kilobytes
+        @param request_memory: request the specified number of I{megabytes} of
+            memory for the buildslave.
+        @type request_memory: integer megabytes
+        @param extra_submit_descr: newline-separated additional entries for
+            the HTCondor submit description file used to start the buildslave.
+        @param extra_submit_descr: string
 
-        Each buildslave job sets the ClassAd "BuildslaveJob", which can be used
-        in rank and requirements expressions.
+        Each buildslave job sets the boolean ClassAd "BuildslaveJob", which can
+        be used in rank and requirements expressions.
 
-        A periodic_remove expression is specified to instruct HTCondor delete
-        the job if it goes on hold, or has been idle for longer the latent
-        slave's missing_timeout.
+        A periodic_remove expression is defined to instruct HTCondor delete
+        the job if it goes on hold, or has been idle for longer than the latent
+        slave's C{missing_timeout} parameter.
         """
 
         DRMAALatentBuildSlave.__init__(self, slave_start_cmd, *args, **kwargs)
@@ -85,11 +91,11 @@ class HTCondorLatentBuildSlave(DRMAALatentBuildSlave):
         submit_description_rw = {
             'accounting_group'      :None,  # Site-specific; needs HTCondor 8.x
             'accounting_group_user' :None,  # Defaults to process owner
-            'request_buildslave'    :None,  # HTCondor machine resource config
+            'request_buildslave'    :None,  # HTCondor machine_resource
 
             'request_cpu'           :'1',
-            'request_disk'          :'2097152',  # 2GB scratch space default
-            'request_memory'        :'2048',  # 2GB memory default
+            'request_disk'          :'1048576', # 1GB scratch space default
+            'request_memory'        :'2048',    # 2GB memory default
         }
 
         submit_description_ro = {
@@ -143,10 +149,12 @@ class HTCondorLatentBuildSlave(DRMAALatentBuildSlave):
     def _htcondor_env_value(value):
         """ Convert a string to an HTCondor environment variable value
 
-        Modify the string provided to make it suitable for use as an
-        env variable value within the HTCondor "environment" submit
-        description directive, by escaping single and double quotes
-        and enclosing the result in single quotes.
+        @param value: string to be assigned to an environment variable in an
+            HTCondor C{environment} submit descriptiondirective.
+        @type value: string
+        
+        Returns the string enclosed in single quotes with single and double
+        quotes escaped according to HTCondor submit descriptionrequirements. 
         """
 
         value = value.replace('"', '""')
