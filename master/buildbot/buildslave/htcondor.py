@@ -15,64 +15,45 @@ class HTCondorLatentBuildSlave(DRMAALatentBuildSlave):
     def __init__(self, slave_start_cmd, *args, **kwargs):
         r""" Dispatch a latent buildslave to an HTCondor queue
         
-        slave_start_cmd -- the OS command used to start the Buildbot slave,
-            i.e., a script which creates and runs a non-daemon buildslave
-            instance in $_CONDOR_SCRATCH_DIR. The script is transferred to
-            the exec node, so need not be on a shared filesystem.
-        accounting_group
-        accounting_group_user -- name of the HTCondor accounting user or group
-            to which buildbot jobs should be assigned. This syntax requires
-            v8.x; if you haven't upgraded yet, use extra_submit_description to
-            specify an "+AccountingGroup" ClassAd. The priority factor of
-            the buildbot user or group should be kept low in order to insure
-            that queued buildslave jobs aren't excessively delayed.
-        request_buildslave -- in conjunction with v7.9.0 machine_resource_names
-            you can specify a resource in your HTCondor config to limit the
-            number of buildslaves which can run on a single host:
-                MACHINE_RESOURCE_NAMES = $(MACHINE_RESOURCE_NAMES) Buildslave
-                MACHINE_RESOURCE_Buildslave = 1
-                SLOT_TYPE_1 = buildslave=100%
-            You can also use "machine_resource_inventory_buildslave" to provide
-            a script which detects if a machine has Buildbot available and
-            returns the desired number. If none, it must still report zero:
-                DetectedBuildslave=0
-            This option can't be used unless this configuration is in place.
-        request_cpus -- reserve this many CPU cores for use by the buildslave.
-            Since this is set when the slave is created and doesn't change,
-            most slaves should use the default of 1 and the builds should
-            be designed to make full use of one core; in particular, max_builds
-            should always be set to 1. If you have builders which require
-            multiple cores for a build, then you should create separate latent
-            slaves with larger request_cpus for use by only those builders,
-            in order to avoid wasting pool resources.
-        request_disk -- request the use of the specified number of KILOBYTES
-            of disk space in the exec node's scratch directory, default of
-            2GB. The location is provided to the Buildslave in the
-            $_CONDOR_SCRATCH_DIR and $TMPDIR env variables. To use this
-            space, the env variables must be referenced in the build steps,
-            and it is cleaned up automatically when the slave ends so the
-            builders don't need to do it. Size variances
-        request_memory -- request the specified number of MEGABYTES of memory
-            for use by the latent buildslave. This is set at creation of the
-            slave and can't be adjusted by the build, so select a reasonable
-            value that can accommodate the expected range of values for the
-            attached builders. You can use the condor_history command to
-            review the memory use of prior slave runs.
-        extra_submit_description -- a string containing newline-separated
-            additional entries for the HTCondor submit description file for
-            the buildslave. This must be used for job ClassAds with "+AdName"
-            notation, since a "+" can't be used in a keyword arg.
+        @param slave_start_cmd: the OS command used to start the buildslave on
+                                the execute node on which the job runs.
+        @param accounting_group: The name of the HTCondor accounting group;
+                                 requires HTCondor v8.x or higher
+        @param accounting_group_user: name of the accounting group user;
+                                      requires HTCondor v8.x or higher
+        @param request_buildslave: with v7.9.0 machine_resource_names you can
+                                   specify a machine resource in your HTCondor
+                                   config to limit the number of buildslaves
+                                   which can run on a single exec host:
+                                     MACHINE_RESOURCE_NAMES = \
+                                          $(MACHINE_RESOURCE_NAMES) Buildslave
+                                     MACHINE_RESOURCE_Buildslave = 1
+                                     SLOT_TYPE_1 = buildslave=100%
+                                   Use "machine_resource_inventory_buildslave"
+                                   to specify a script which detects if a
+                                   machine has Buildbot available and returns
+                                   the desired maximum number of slaves per
+                                   host.  If none, it must still report zero:
+                                     DetectedBuildslave=0
+                                   This parameter can't be used unless this
+                                   HTCondor configuration is in place.
+        @param request_cpus: reserve this many CPU cores for the buildslave
+        @param request_disk: request the use of the specified number of
+                             KILOBYTES of disk space in the exec host's
+                             $_CONDOR_SCRATCH_DIR scratch directory, default
+                             of 2GB.
+        @param request_memory: request the specified number of MEGABYTES of
+                               memory for the buildslave
+        @param extra_submit_descr: a newline-separated additional entries for
+                                   the HTCondor submit description file used to
+                                   start the buildslave.
 
-        In addition, each buildslave job sets the ClassAd "BuildslaveJob",
-        which can be used in rank and requirements expressions. For example,
-        to prevent a machine from running any buildslaves, change the START
-        expression for that machine to refuse the jobs:
-            START = $(START) && (TARGET.BuildslaveJob =!= True)
+        Each buildslave job sets the ClassAd "BuildslaveJob", which can be used
+        in rank and requirements expressions.
 
-        A periodic_remove expression is specified to have HTCondor delete the
-        job if it goes on hold or has been idle for longer the latent slave's
-        missing_timeout, to prevent it from being dispatched later and then
-        contacting the master when it is not substantiating the slave.
+        A periodic_remove expression is specified to instruct HTCondor delete
+        the job if it goes on hold, or has been idle for longer the latent
+        slave's missing_timeout.
         """
 
         DRMAALatentBuildSlave.__init__(self, slave_start_cmd, *args, **kwargs)
@@ -132,11 +113,11 @@ class HTCondorLatentBuildSlave(DRMAALatentBuildSlave):
 
         # Add the user-defined submit description directives
         try:
-            kwargs['extra_submit_description']
+            kwargs['extra_submit_descr']
         except:
             pass
         else:
-            native_spec += kwargs['extra_submit_description'] + "\n"
+            native_spec += kwargs['extra_submit_descr'] + "\n"
 
         # Add the read-only directives last so they can't be overridden,
         # as the proper operation of the slave depends on some of them
