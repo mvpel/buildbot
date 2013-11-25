@@ -78,7 +78,7 @@ def slave_workdir():
         gridengine = False
 
     if not gridengine and not htcondor:
-        raise NotImplementedError('I can only run as an HTCondor or ' \
+        raise NotImplementedError('I can only run as an HTCondor or ' +
                                   'Grid Engine job')
     try:
         return os.environ['TMPDIR'] + "/" + options.slavename
@@ -102,8 +102,6 @@ def try_mkdir(dirname):
             pass
         else:
             raise
-    except:
-        raise
 
 def create_info_files(slave_dir):
     """ Create the slave info/host file
